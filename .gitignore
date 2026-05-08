@@ -1,0 +1,12 @@
+.claude/
+downloads/
+exports/
+*.ris
+*.bib
+*.enw
+*.pdf
+*.tmp
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
