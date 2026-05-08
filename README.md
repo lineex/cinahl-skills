@@ -1,139 +1,141 @@
 # CINAHL Skills for Claude Code
 
-English | 中文
+<p align="center">
+  <a href="#english">English</a> | <a href="#chinese">中文</a>
+</p>
 
-Claude Code skills that let an agent operate CINAHL on EBSCOhost through Chrome DevTools MCP.
+---
 
-Search CINAHL, run advanced Boolean queries, parse result pages, open article records, browse publications, download available full text, export citations, and push records to Zotero.
-
+<a name="english"></a>
 ## English
+
+Claude Code skills that let an agent operate **CINAHL (Cumulative Index to Nursing and Allied Health Literature)** on EBSCOhost through Chrome DevTools MCP.
+
+### Key Features
+
+*   **Smart Search**: Basic keyword search and advanced Boolean queries using EBSCO/CINAHL field codes.
+*   **Result Parsing**: Deep extraction of article metadata, subject headings, abstracts, and identifiers (DOI, PMID).
+*   **Full-Text Access**: Automated download of PDF full text and navigation of full-text provider links.
+*   **Workflow Integration**: Search → Detail Extraction → Citation Export (RIS/BibTeX) → Zotero Integration → PDF Download.
+*   **Adaptive Authentication**: Handles institutional redirects (SSO, Shibboleth, EZProxy, WebVPN) by preserving active session context.
 
 ### Prerequisites
 
-- Claude Code CLI installed
-- Chrome browser with Chrome DevTools MCP enabled
-- Institutional access to CINAHL through EBSCOhost, EZProxy, WebVPN, Shibboleth, SSO, or IP authentication
-- Zotero desktop app, optional, for citation export
-- Python 3, optional, for the Zotero helper script
+*   **Claude Code CLI** installed.
+*   **Chrome Browser** with [Chrome DevTools MCP](https://github.com/google/chrome-devtools-mcp) enabled.
+*   **Institutional Access** to CINAHL via EBSCOhost.
+*   *(Optional)* **Zotero Desktop** for citation management.
+*   *(Optional)* **Python 3** for the Zotero helper script.
 
-### Skills
+### Available Skills
 
-| Skill | Description | Invocation |
-| --- | --- | --- |
-| `cinahl-search` | Basic CINAHL keyword search with structured result extraction | `/cinahl-search pressure injury prevention` |
-| `cinahl-advanced-search` | Fielded Boolean search using EBSCO/CINAHL field codes and common limiters | `/cinahl-advanced-search title:falls author:Smith year:2020-2026` |
-| `cinahl-parse-results` | Re-parse the currently open CINAHL result list | Internal |
-| `cinahl-navigate-pages` | Move through result pages, sort, and adjust result display | `/cinahl-navigate-pages next` |
-| `cinahl-paper-detail` | Extract full article metadata, subject headings, abstract, DOI, PMID, and access links | `/cinahl-paper-detail AN=181230979 db=rzh` |
-| `cinahl-journal-browse` | Search or open CINAHL publication pages and latest articles | `/cinahl-journal-browse Journal of Advanced Nursing` |
-| `cinahl-download` | Download accessible PDF full text, or open HTML/full-text provider links | `/cinahl-download AN=181230979 db=rzh` |
-| `cinahl-export` | Export RIS/BibTeX/plain text and optionally push records to Zotero | `/cinahl-export AN=181230979 db=rzh format: ris` |
+| Skill | Description | Example Invocation |
+| :--- | :--- | :--- |
+| `cinahl-search` | Keyword search with structured results. | `/cinahl-search "pressure injury prevention"` |
+| `cinahl-advanced-search` | Fielded Boolean search with limiters. | `/cinahl-advanced-search title:falls author:Smith year:2020-2026` |
+| `cinahl-paper-detail` | Extract full metadata and access links. | `/cinahl-paper-detail AN=181230979 db=rzh` |
+| `cinahl-export` | Export RIS/BibTeX or push to Zotero. | `/cinahl-export AN=181230979 db=rzh format:ris` |
+| `cinahl-download` | Download PDF or open provider links. | `/cinahl-download AN=181230979 db=rzh` |
+| `cinahl-journal-browse` | Browse publications and latest issues. | `/cinahl-journal-browse "Journal of Advanced Nursing"` |
+| `cinahl-navigate-pages` | Pagination, sorting, and display options. | `/cinahl-navigate-pages next` |
+| `cinahl-parse-results` | Re-parse current result list. | *Internal Use* |
 
-### Agent
+### Installation
 
-`cinahl-researcher` orchestrates all eight skills. It handles institutional login redirects, preserves the active EBSCO profile URL, supports both new EBSCOhost and classic direct links, and coordinates workflows such as search -> detail -> export -> download.
+1. **Add Chrome DevTools MCP**:
+   ```bash
+   claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
+   ```
 
-### Install Chrome DevTools MCP
-
-```bash
-claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
-```
-
-Recommended Chrome launch settings:
-
-```json
-{
-  "mcpServers": {
-    "chrome-devtools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest",
-        "--ignoreDefaultChromeArg=--enable-automation",
-        "--ignoreDefaultChromeArg=--disable-infobars",
-        "--chromeArg=--disable-blink-features=AutomationControlled"
-      ]
-    }
-  }
-}
-```
-
-### Install The Skills
-
-```bash
-git clone <your-cinahl-skills-repo-url> cinahl-skills
-cd cinahl-skills
-cp -r skills/ agents/ .claude/
-```
-
-Or copy into an existing Claude Code project:
-
-```bash
-cp -r D:/AIcodex/cinahl-skills/skills your-project/.claude/skills/
-cp -r D:/AIcodex/cinahl-skills/agents your-project/.claude/agents/
-```
+2. **Clone and Install Skills**:
+   ```bash
+   git clone https://github.com/lineex/cinahl-skills.git
+   cd cinahl-skills
+   # Copy to your Claude Code configuration directory
+   cp -r skills/ agents/ ~/.claude/
+   ```
 
 ### EBSCO/CINAHL URL Strategy
 
-The skills preserve whatever EBSCO URL the user's browser is already authenticated on:
+The skills are designed to be environment-agnostic. They preserve the `{profile}` ID and `{db}` codes from your active session.
 
-- New EBSCOhost search results: `https://research.ebsco.com/c/{profile}/search/results?q={query}&autocorrect=y&db={db}&expanders=concept&limiters=None&searchMode=boolean&searchSegment=all-results`
-- New EBSCOhost detail: `https://research.ebsco.com/c/{profile}/search/details/{recordId}?db={db}&limiters=None&q={query}&searchMode=boolean`
-- Classic direct article link: `https://search.ebscohost.com/login.aspx?direct=true&db={db}&AN={accessionNumber}&site=ehost-live&scope=site`
-
-Common CINAHL database codes:
-
-| Code | Meaning |
-| --- | --- |
+| CINAHL DB Code | Database Name |
+| :--- | :--- |
 | `ccm` | CINAHL Complete |
 | `rzh` | CINAHL Plus with Full Text |
 | `cul` | CINAHL Ultimate |
-| `cin20` | CINAHL index |
 | `c8h` | CINAHL with Full Text |
 
-If no EBSCO page is open, start from the institution's EBSCO/CINAHL URL. Public profile IDs under `/c/{profile}` are institution-specific, so the agent should ask for the user's library link when it cannot infer one.
+---
+
+<a name="chinese"></a>
+## 中文 (Chinese)
+
+这是一套专为 Claude Code 设计的技能集，通过 Chrome DevTools MCP 赋予 Agent 直接操作 **CINAHL (护理学及相关健康治疗全文数据库)** 的能力。
+
+### 核心功能
+
+*   **智能检索**: 支持基础关键词搜索及使用 EBSCO 字段代码的布尔逻辑高级检索。
+*   **深度解析**: 自动提取文章元数据、核心主题词 (Subject Headings)、摘要及 DOI/PMID。
+*   **全文获取**: 自动化下载 PDF 全文，支持处理第三方全文库跳转。
+*   **全流程自动化**: 检索 → 详情提取 → 引用导出 (RIS/BibTeX) → 推送 Zotero → 下载 PDF。
+*   **身份验证适配**: 完美适配机构认证 (SSO, Shibboleth, EZProxy, WebVPN)，自动保存活动会话上下文。
+
+### 使用前提
+
+*   已安装 **Claude Code CLI**。
+*   已配置 **Chrome DevTools MCP**。
+*   拥有机构提供的 **CINAHL/EBSCOhost 访问权限**。
+*   （可选）**Zotero 桌面端**，用于文献管理。
+*   （可选）**Python 3**，用于执行 Zotero 推送脚本。
+
+### 技能列表
+
+| 技能名称 | 描述 | 调用示例 |
+| :--- | :--- | :--- |
+| `cinahl-search` | 基础关键词检索及结果提取 | `/cinahl-search "护理干预 压疮"` |
+| `cinahl-advanced-search` | 字段布尔检索及筛选条件 | `/cinahl-advanced-search title:跌倒 author:张三 year:2022-2025` |
+| `cinahl-paper-detail` | 提取全文元数据及访问链接 | `/cinahl-paper-detail AN=181230979 db=rzh` |
+| `cinahl-export` | 导出引用或推送到 Zotero | `/cinahl-export AN=181230979 db=rzh format:ris` |
+| `cinahl-download` | 下载 PDF 或打开全文链接 | `/cinahl-download AN=181230979 db=rzh` |
+
+### 安装步骤
+
+1. **添加 Chrome 调试服务**:
+   ```bash
+   claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
+   ```
+
+2. **克隆并部署技能**:
+   ```bash
+   git clone https://github.com/lineex/cinahl-skills.git
+   cd cinahl-skills
+   # 复制到您的 Claude Code 配置目录
+   cp -r skills/ agents/ ~/.claude/
+   ```
+
+### 登录与 URL 策略
+
+这些技能不会硬编码特定的机构登录地址。它们会优先读取当前浏览器中已经登录的页面，并自动识别 `profile` ID。如果检测到需要重新认证（如跳转至登录页），Agent 会提示用户在浏览器中手动完成认证后继续。
+
+---
 
 ### Project Structure
 
 ```text
 skills/
-  cinahl-search/SKILL.md
-  cinahl-advanced-search/SKILL.md
-  cinahl-parse-results/SKILL.md
-  cinahl-navigate-pages/SKILL.md
-  cinahl-paper-detail/SKILL.md
-  cinahl-journal-browse/SKILL.md
-  cinahl-download/SKILL.md
-  cinahl-export/
+  cinahl-search/SKILL.md            # Keyword searching
+  cinahl-advanced-search/SKILL.md   # Advanced Boolean logic
+  cinahl-parse-results/SKILL.md     # Result extraction
+  cinahl-navigate-pages/SKILL.md    # Pagination & sorting
+  cinahl-paper-detail/SKILL.md      # Full record extraction
+  cinahl-journal-browse/SKILL.md    # Publication lookup
+  cinahl-download/SKILL.md          # PDF acquisition
+  cinahl-export/                    # RIS/BibTeX export
     SKILL.md
     scripts/
       push_to_zotero.py
 agents/
-  cinahl-researcher.md
+  cinahl-researcher.md              # Main orchestrator agent
 ```
 
-## 中文
-
-这是一套让 Claude Code 通过 Chrome DevTools MCP 操作 CINAHL/EBSCOhost 的技能集。整体结构模仿 `sd-skills`，但核心逻辑已替换为 EBSCOhost/CINAHL 的登录、检索、详情、全文下载和引用导出流程。
-
-### 使用前提
-
-- 已安装 Claude Code CLI
-- 已配置 Chrome DevTools MCP
-- Chrome 中可通过学校/医院/机构登录 CINAHL/EBSCOhost
-- 可选：Zotero 桌面端，用于导出引用
-- 可选：Python 3，用于 Zotero 推送脚本
-
-### 安装
-
-```bash
-claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
-cp -r D:/AIcodex/cinahl-skills/skills your-project/.claude/skills/
-cp -r D:/AIcodex/cinahl-skills/agents your-project/.claude/agents/
-```
-
-启动 Claude Code 后，可用 `/cinahl-search pressure injury prevention` 验证。第一次使用时建议先在 Chrome 中打开机构的 CINAHL/EBSCOhost 链接并完成登录。
-
-### 登录逻辑
-
-这些技能不会硬编码某个学校的登录地址。它们会优先读取当前浏览器中已经登录的 EBSCOhost 页面，并把该页面的 `origin + /c/{profile}` 保存为后续操作的基准地址。如果页面跳转到 SSO、Shibboleth、EZProxy、WebVPN 或登录页，agent 会暂停并提示用户在浏览器中完成认证，然后继续执行原任务。
